@@ -90,9 +90,10 @@ ENV/
 .ropeproject
 
 # Database files
-.sqlite3
-.csv
-.txt
+*.sqlite3
+*.csv
+*.txt
 
 # Compressed files
-.zip
+*.zip
+*.piz
