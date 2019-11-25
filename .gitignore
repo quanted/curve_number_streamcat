@@ -92,6 +92,7 @@ ENV/
 # Database files
 .sqlite3
 .csv
+.txt
 
 # Compressed files
 .zip
