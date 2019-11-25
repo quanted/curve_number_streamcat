@@ -96,30 +96,13 @@ def get_streamcat_data(files):
     print("Completed import of streamcat files.")
 
 
-def update_database():
-    """
-    :return: None
-    """
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    table_check_query = "PRAGMA TABLE_INFO('PlusFlowlineVAA')"
-    current_table_state = c.execute(table_check_query)
-    column_names = [col[1] for col in current_table_state.fetchall()]
-    if 'CurveNumber' not in column_names:
-        update_query = "ALTER TABLE PlusFlowlineVAA ADD CurveNumber DECIMAL(10, 5)"
-        c.execute(update_query)
-        conn.commit()
-    conn.close()
-
-
 class Catchment:
     """
     Catchment data from epa waters watershed report
     https://watersgeo.epa.gov/watershedreport/?comid=
     """
 
-    def __init__(self, ndvi_data, _region, i):
+    def __init__(self, ndvi_data, _region):
         self.comid = ndvi_data["ComID"]
         self.region = _region
         self.landcover = None  # NLCD landcover data for the catchment
@@ -134,7 +117,7 @@ class Catchment:
         self.set_ndvi(ndvi_data)
         self.calculate_curvenumber()  # Function to calculate curve number
         self.calculate_curvenumber_avg()
-        self.update_database(i)
+        self.update_database()
 
     def set_catchment_data(self):
         """
@@ -172,7 +155,7 @@ class Catchment:
 
     def calculate_hsg(self):
         """
-        Calculate Hydorlogic Soil Group from the clay and sand composition data at streamcat
+        Calculate Hydrologic Soil Group from the clay and sand composition data at streamcat
         Reference: https://daac.ornl.gov/SOILS/guides/Global_Hydrologic_Soil_Group.html
         """
         if not self.valid_catchment:
@@ -268,7 +251,7 @@ class Catchment:
             cn_avg[k] = round(Decimal(cn), 4)
         self.curve_number_avg = cn_avg
 
-    def update_database(self, j):
+    def update_database(self):
         if not self.valid_catchment:
             print("Invalid Catchment. Not found in streamcat data. ComID: {}".format(self.comid))
             return
@@ -288,7 +271,6 @@ class Catchment:
             c.execute(query)
         c.execute("COMMIT")
         conn.close()
-        print("Completed: {}, ComID: {}".format(j, self.comid))
 
 
 # executor = concurrent.futures.ThreadPoolExecutor(max_workers=6)
@@ -309,26 +291,24 @@ def cn_calculation_region(region):
         global ndvi_data
         ndvi_data = json_data
         print("Import complete.")
-    # inputs = []
-    conn = get_db_connection()
-    c = conn.cursor()
-    finished_catchments = []
-    for comid in c.execute("SELECT ComID FROM CurveNumber"):
-        finished_catchments.append(str(comid[0]))
-    conn.close()
+    total = len(ndvi_data)
     i = 1
     for v, row in ndvi_data.items():
-        if str(row["ComID"]) not in finished_catchments:
-            Catchment(row, region, i)
-            # inputs.append([row, region, i])
-            i = i + 1
-    # loop = asyncio.get_event_loop()
-    # futures = [loop.run_in_executor(executor, Catchment, catchment) for catchment in inputs]
-    # asyncio.gather(*futures)
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT ComID FROM CurveNumber WHERE ComID={}".format(row["ComID"]))
+        db_v = c.fetchall()
+        conn.close()
+        if len(db_v) == 0:
+            Catchment(row, region)
+            print("Completed: {}/{}, ComID: {}".format(i, total, row["ComID"]))
+        else:
+            print("Catchment: {}/{} already completed. ComID: {}".format(i, total, row["ComID"]))
+        i = i + 1
 
 
 def main():
-    region = "09"
+    region = "17"
 
     files = {
         "Data/NLCD2011_Region{}.csv".format(region): "NLCD2011_Region{}.zip".format(region),
