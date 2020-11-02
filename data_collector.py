@@ -78,15 +78,15 @@ class HUCData:
 
     def iterate_comids(self):
         self.data_total = len(self.comids)
-        print("COMID N: {}".format(self.data_total))
-        for c in self.comids:
-            self.get_catchment_data(c)
-        # print("CPU Count: {}".format(mp.cpu_count()))
-        # pool = mp.Pool(mp.cpu_count())
-        # global results
-        # results = pool.map_async(self.get_catchment_data, [c for c in self.comids]).get()
-        # pool.close()
-        # pool.join()
+        #print("COMID N: {}".format(self.data_total))
+        #for c in self.comids:
+        #    self.get_catchment_data(c)
+        print("CPU Count: {}".format(mp.cpu_count()))
+        pool = mp.Pool(mp.cpu_count())
+        global results
+        results = pool.map_async(self.get_catchment_data, [c for c in self.comids]).get()
+        pool.close()
+        pool.join()
 
     def get_catchment_data(self, comid):
         cn = self.query_cn(comid)
@@ -119,8 +119,8 @@ class HUCData:
 
     def query_cn(self, comid):
         conn = self.connect_to_db()
-        query = "SELECT Count(Distinct ComID) FROM CurveNumberRaw"
-        # query = "SELECT ComID, TimeStep, CN FROM CurveNumberRaw WHERE ComID={}".format(comid)
+        # query = "SELECT Count(Distinct ComID) FROM CurveNumberRaw"
+        query = "SELECT ComID, TimeStep, CN FROM CurveNumberRaw WHERE ComID={}".format(comid)
         c = conn.cursor()
         c.execute(query)
         values = c.fetchall()
@@ -146,7 +146,10 @@ if __name__ == "__main__":
         # "03050105": ["huc_data\\03050105_COMID_Area.txt", ["catchment_ndvi_03N.csv"]],
         # "10250017": ["huc_data\\10250017_COMID_Area.txt", ["catchment_ndvi_10L_1.csv", "catchment_ndvi_10L_2.csv"]],
         # "10250017": ["huc_data\\10250017_COMID_Area.txt", ["catchment_ndvi_10L_1.csv"]],
-        "15070102": ["huc_data\\15020018_COMID_Area.txt", ["catchment_ndvi_15.csv"]]
+        # "15020018": ["huc_data\\15020018_COMID_Area.txt", ["catchment_ndvi_15.csv"]],
+        # "16060014": ["huc_data\\16060014_COMID_Area.txt", ["catchment_ndvi_16.csv"]]
+        # "18090205": ["huc_data\\18090205_COMID_Area.txt", ["catchment_ndvi_18.csv"]]
+        "15020018": ["huc_data\\15020018_COMID_Area.txt", ["catchment_ndvi_15.csv"]]
     }
 
     for k, v in hucs.items():

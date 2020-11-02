@@ -97,3 +97,7 @@ ENV/
 # Compressed files
 *.zip
 *.piz
+
+# Support Data
+Data/
+huc_data/
